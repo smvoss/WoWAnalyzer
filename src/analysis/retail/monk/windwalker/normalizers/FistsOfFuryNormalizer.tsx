@@ -15,6 +15,15 @@ const EVENT_ORDERS: EventOrder[] = [
     anyTarget: true,
     updateTimestamp: true,
   },
+  {
+    beforeEventId: SPELLS.FISTS_OF_FURY_DAMAGE.id,
+    beforeEventType: EventType.Damage,
+    afterEventId: SPELLS.FISTS_OF_FURY_CAST.id,
+    afterEventType: EventType.EndChannel,
+    bufferMs: MAX_DELAY,
+    anyTarget: true,
+    updateTimestamp: true,
+  },
 ];
 
 class FistsOfFuryNormalizer extends EventOrderNormalizer {

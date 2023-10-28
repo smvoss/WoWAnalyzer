@@ -1,6 +1,12 @@
 import SPELLS from 'common/SPELLS';
 import CLASSIC_SPELLS from 'common/SPELLS/classic';
-import { TALENTS_EVOKER, TALENTS_MAGE, TALENTS_MONK } from 'common/TALENTS';
+import {
+  TALENTS_DEMON_HUNTER,
+  TALENTS_EVOKER,
+  TALENTS_MAGE,
+  TALENTS_MONK,
+  TALENTS_PRIEST,
+} from 'common/TALENTS';
 import CASTS_THAT_ARENT_CASTS from 'parser/core/CASTS_THAT_ARENT_CASTS';
 import {
   AnyEvent,
@@ -16,8 +22,6 @@ import {
 import EventsNormalizer from 'parser/core/EventsNormalizer';
 import InsertableEventsWrapper from 'parser/core/InsertableEventsWrapper';
 import { Options } from 'parser/core/Module';
-import { TALENTS_DEMON_HUNTER } from 'common/TALENTS';
-import { TALENTS_PRIEST } from 'common/TALENTS';
 import { playerInfo } from '../metrics/apl/conditions/test-tools';
 
 /**
@@ -76,7 +80,7 @@ class Channeling extends EventsNormalizer {
     buffChannelSpec(TALENTS_MONK.ESSENCE_FONT_TALENT.id),
     buffChannelSpec(TALENTS_MONK.SOOTHING_MIST_TALENT.id),
     buffChannelSpec(SPELLS.CRACKLING_JADE_LIGHTNING.id),
-    buffChannelSpec(SPELLS.FISTS_OF_FURY_CAST.id),
+    buffChannelSpec(SPELLS.FISTS_OF_FURY_CAST.id, true),
     // Demon Hunter
     buffChannelSpec(TALENTS_DEMON_HUNTER.EYE_BEAM_TALENT.id), // TODO special handling because of the two buffs?
     // Shaman
@@ -231,7 +235,11 @@ function copyTargetData(target: ChannelState['unresolvedChannel'], source: AnyEv
 }
 
 /** Updates the ChannelState with a EndChannelEvent tied to the current channel */
-export function endCurrentChannel(event: AnyEvent, channelState: ChannelState) {
+export function endCurrentChannel(
+  event: AnyEvent,
+  channelState: ChannelState,
+  nextCast?: CastEvent,
+) {
   if (!channelState.unresolvedChannel) {
     // TODO log error?
     return;
@@ -246,6 +254,7 @@ export function endCurrentChannel(event: AnyEvent, channelState: ChannelState) {
     duration: event.timestamp - channelState.unresolvedChannel.timestamp,
     beginChannel: channelState.unresolvedChannel,
     trigger: event,
+    nextCast: nextCast,
   };
   channelState.eventsInserter.addAfterEvent(endChannel, event);
   channelState.unresolvedChannel = null;
@@ -278,7 +287,7 @@ export function cancelCurrentChannel(currentEvent: AnyEvent, channelState: Chann
  *
  * @param spellId the guid for the tracked Cast and RemoveBuff/RemoveDebuff events.
  */
-export function buffChannelSpec(spellId: number): ChannelSpec {
+export function buffChannelSpec(spellId: number, saveNextCast?: boolean): ChannelSpec {
   const guids = [spellId];
   const handler: ChannelHandler = (
     event: AnyEvent,
@@ -290,6 +299,7 @@ export function buffChannelSpec(spellId: number): ChannelSpec {
       // do standard start channel stuff
       cancelCurrentChannel(event, state);
       beginCurrentChannel(event, state);
+
       // now scan ahead for the matched removebuff and end the channel at it
       for (let idx = eventIndex + 1; idx < events.length; idx += 1) {
         const laterEvent = events[idx];
@@ -298,8 +308,25 @@ export function buffChannelSpec(spellId: number): ChannelSpec {
           laterEvent.ability.guid === spellId &&
           (laterEvent.type === EventType.RemoveBuff || laterEvent.type === EventType.RemoveDebuff)
         ) {
-          endCurrentChannel(laterEvent, state);
-          break;
+          if (saveNextCast) {
+            // begin seeking for the next Cast event, and then end the channel
+            for (let idy = idx + 1; idy < events.length; idy += 1) {
+              const nextEvent = events[idy];
+              if (
+                HasAbility(nextEvent) &&
+                nextEvent.type === EventType.Cast &&
+                HasSource(nextEvent) &&
+                nextEvent.sourceID === laterEvent.sourceID
+              ) {
+                endCurrentChannel(laterEvent, state, nextEvent);
+                break;
+              }
+            }
+            break;
+          } else {
+            endCurrentChannel(laterEvent, state);
+            break;
+          }
         }
       }
     }

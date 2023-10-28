@@ -438,6 +438,7 @@ export interface EndChannelEvent extends Event<EventType.EndChannel> {
   duration: number;
   beginChannel: BeginChannelEvent;
   trigger?: AnyEvent;
+  nextCast?: CastEvent;
 }
 
 export interface BaseCastEvent<T extends string> extends Event<T> {
