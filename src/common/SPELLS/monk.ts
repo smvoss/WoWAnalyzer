@@ -460,8 +460,13 @@ const spells = {
     name: 'Uplifted Spirits',
     icon: 'monk_stance_wiseserpent',
   },
-  WHIRLING_DRAGON_PUNCH_TALENT: {
+  WHIRLING_DRAGON_PUNCH_DAMAGE: {
     id: 158221,
+    name: 'Whirling Dragon Punch',
+    icon: 'ability_monk_hurricanestrike',
+  },
+  WHIRLING_DRAGON_PUNCH_USABLE: {
+    id: 196742,
     name: 'Whirling Dragon Punch',
     icon: 'ability_monk_hurricanestrike',
   },
