@@ -13,6 +13,19 @@ import RESOURCE_TYPES from 'game/RESOURCE_TYPES';
 export default function Guide({ modules, events, info }: GuideProps<typeof CombatLogParser>) {
   return (
     <>
+      <Section title="Preface & Disclaimers">
+        <>
+          The analysis in this guide is provided in collaboration with the{' '}
+          <a href="https://discord.com/invite/peakofserenity">Peak of Serenity</a> Discord. Keep in
+          mind that WoWAnalyzer is limited to what is present in your combat log, and we cannot
+          always detect intentional deviations such as holding cooldowns for a specific strategy.
+          <br />
+          <br />
+          If you notice any issues or errors in this analysis or have feature requests, please reach
+          out to <code>@durpn</code> in the{' '}
+          <a href="https://discord.com/invite/peakofserenity">Peak of Serenity</a> Discord.
+        </>
+      </Section>
       <Section title="Core Spells and Buffs">
         <MasteryGraph modules={modules} events={events} info={info} />
         {info.combatant.hasTalent(TALENTS_MONK.CELESTIAL_CONDUIT_WINDWALKER_TALENT) &&
@@ -23,7 +36,11 @@ export default function Guide({ modules, events, info }: GuideProps<typeof Comba
         {info.combatant.hasTalent(TALENTS_MONK.SLICING_WINDS_TALENT) &&
           modules.slicingWinds.guideSubsection}
       </Section>
-      <Section title="Major cooldowns">{modules.invokeXuen.guideSubsection}</Section>
+      <Section title="Major cooldowns">
+        {info.combatant.hasTalent(TALENTS_MONK.INVOKE_XUEN_THE_WHITE_TIGER_TALENT) &&
+          modules.invokeXuen.guideSubsection}
+        {info.combatant.hasTalent(TALENTS_MONK.ZENITH_TALENT) && modules.zenith.guideSubsection}
+      </Section>
       <Section title="Core Rotation">
         <SubSection title="Overview">
           The priority list provided here is a rough outline of actions taken, however as always you
